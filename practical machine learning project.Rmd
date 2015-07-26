@@ -51,7 +51,7 @@ prediction.test <- predict(model.rf, model.data.test)
 print(confusionMatrix(prediction.train, model.data.train$classe))
 print(confusionMatrix(prediction.test, model.data.test$classe))
 ```
-From the model summary we can see that the out of sample error is 1-0.9981=0.0019 or 0.19%. So it is a very accurate prediction model.
+From the model summary we can see that the out of sample error is 1-0.9968=0.0032 or 0.32%. So it is a very accurate prediction model.
 
 ##Prediction
 
