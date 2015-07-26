@@ -1,0 +1,78 @@
+---
+title: "Practical Machine Learning Project"
+author: "Tao Zhao"
+date: "Monday, July 20, 2015"
+output: html_document
+---
+
+Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, the goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+The training data for this project are from https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+The test data are from https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+The data for this project come from http://groupware.les.inf.puc-rio.br/har. 
+
+##Download and Preprocess
+```{r}
+library(caret)
+setwd("c:/rwork/practical machine learning/project")
+#setwd("/home/master/rwork/practical machine learning/project")
+#Read data
+data.train <- read.csv("pml-training.csv")
+data.test <- read.csv("pml-testing.csv")
+#Preprocess
+#remove description columns
+data.train <- data.train[, 7:ncol(data.train)]
+#Remove near zero variance columns
+nzc <- nearZeroVar(data.train, saveMetrics = TRUE)
+data.train <- data.train[,nzc$nzv==FALSE]
+#remove columns with too many NAs
+nac <- apply(data.train, 2, function(x) {sum(is.na(x))})
+data.train <- data.train[, which(nac < nrow(data.train)*0.7)]
+#Split train data into train and testing
+ti <- createDataPartition(data.train$classe, p=0.6, list=F)
+model.data.train <- data.train[ti,]
+model.data.test <- data.train[-ti,]
+```
+
+##Modeling
+
+```{r}
+set.seed(1234)
+#Random forest
+#model.rf <- train(classe ~., method="rf", data=model.data.train)
+#Random forest with 10 fold cross validation
+model.rf <- train(classe ~., method="rf", data=model.data.train, trControl=trainControl(method="cv", number=10))
+#training and testing set accuracy
+prediction.train <- predict(model.rf, model.data.train)
+prediction.test <- predict(model.rf, model.data.test)
+#Testing and out-of-sample error
+print(confusionMatrix(prediction.train, model.data.train$classe))
+print(confusionMatrix(prediction.test, model.data.test$classe))
+```
+From the model summary we can see that the out of sample error is 1-0.9981=0.0019 or 0.19%. So it is a very accurate prediction model.
+
+##Prediction
+
+```{r}
+result.test <- predict(model.rf, data.test)
+result.test
+```
+
+##Submission
+
+```{r}
+#put result to vector
+answers <- as.vector(result.test)
+#then load this function by copying and pasting it into R
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+#then run this line
+pml_write_files(answers)
+```
